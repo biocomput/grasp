@@ -96,7 +96,17 @@ void grasp(char **MSA, float gap, float match, float mismatch, int k, int maiorS
 		/* Realiza busca local */
 
 		/* Atualiza valor da solucao */
-		score = pontuacao(MSA, gap, match, mismatch, k);
+		PontuacaoFerramentas* ferr = malloc(sizeof(PontuacaoFerramentas));
+		ferr->MSA = MSA;
+		ferr->gap = gap;
+		ferr->mismatch = mismatch;
+		ferr->match = match;
+		ferr->maiorSeq = maiorSeq;
+		ferr->size = k;
+		ferr->score = 0;
+		computeAll(ferr);
+		printf("Score : %f\n",ferr->score);
+		score = ferr->score;
 		if (score >= melhorPontuacao) {
 			melhorPontuacao = score;
 
@@ -117,26 +127,56 @@ void grasp(char **MSA, float gap, float match, float mismatch, int k, int maiorS
 		free(melhorSolucao[i]);
 		free(aux[i]);
 	}
-
 	free(melhorSolucao);
 	free(aux);
 }
-void computeSequence(Sequencia* seq){
-	GapBlock* blocks = findGapBlocks(seq->valor),*temp;
-	temp = blocks;
-	while(temp->prox != NULL){
-		moveBlock(seq,temp);
-		temp = temp->prox;
+void computeAll(PontuacaoFerramentas* ferr){
+	int i;
+	char**  MSA = (char **) malloc(sizeof(char *) * ferr->size);
+  	for (i = 0; i < ferr->size; i++) {
+   	 	MSA[i] = (char *) malloc(sizeof(char) * 3*ferr->maiorSeq); // Exagero de espaco, mas utilizado para evitar problemas com realloc
+    	memset(MSA[i], 0, sizeof(char)*3*ferr->maiorSeq);
+    	strcpy(MSA[i],ferr->MSA[i]);
+ 	 }
+	for(i=0;i<ferr->size;i++){
+		ferr->index = i;
+		computeSequence(ferr);
 	}
 }
-void moveBlock(Sequencia* seq, GapBlock* block){
+void computeSequence(PontuacaoFerramentas* ferr){
+	GapBlock* blocks = findGapBlocks(ferr->MSA[ferr->index]),*temp, *before;
+	temp = blocks;
+	while(temp->prox != NULL){
+		moveBlock(ferr,temp);
+		temp = temp->prox;
+	}
+	printf("(On sort?)\n");
+}
+void moveBlock(PontuacaoFerramentas* ferr, GapBlock* block){
 	int i;
-	char* shortStr = removePart(seq->valor,block->beginning, block->end+1), *tempStr ;
+	float score;
+	char* shortStr = removePart(ferr->MSA[ferr->index],block->beginning, block->end+1), *tempStr, *buff ;
+	buff = malloc(ferr->maiorSeq);
 	GapBlock* blockShort = findGapBlocks(shortStr);
 	for(i=0;i<=strlen(shortStr);i++){
+
 		if(isInBlock(blockShort,i) == 0){
 			tempStr = insertGap(shortStr,i,block->end-block->beginning+1);
-			printf("etape %d : %s\n",i,tempStr);
+			if(tempStr != NULL){
+				strcpy(buff, ferr->MSA[ferr->index]);
+				strcpy(ferr->MSA[ferr->index], tempStr);
+				printf("TEST: %s\n",tempStr);
+				free(tempStr);
+				score = pontuacao(ferr->MSA,ferr->gap, ferr->match,ferr->mismatch,ferr->size);
+				if(ferr->score <score){
+					ferr->score = score;
+					printf("new Score : %f\n", score);
+				}else{
+					strcpy(ferr->MSA[ferr->index], buff);
+				}
+			}
+			
+			//printf("etape %d : %s\n",i,tempStr);
 		}
 	}
 }
@@ -144,12 +184,14 @@ int isInBlock(GapBlock* block, int i){
 	GapBlock* temp = block;
 	int ret = 0;
 	do{
+		printf("deb\n");
 		if(i>temp->beginning && i<= temp->end){
 			//printf("I : %d, beg %d end %d\n",i,temp->beginning,temp->end);
 			ret = 1;
 			break;
 		}
 		temp = temp->prox;
+		printf("fin\n");
 	}while(temp->prox != NULL);
 	return ret;
 }
@@ -181,23 +223,34 @@ char* removePart(char* sentence, int beginning, int end){
 	int strSize = strlen(sentence);
 	if(beginning<=end && strSize>=end){
 		int size = end-beginning;
-		char *newStr = malloc(strlen(sentence)-size+1);
+		char *newStr = malloc((strlen(sentence)-size+1)*sizeof(char));
 		strncpy(newStr,sentence,beginning);
 		strncpy(newStr+beginning, sentence+end,strlen(sentence)-end+1);
 		return newStr;
 	}
-	return ;
+	return NULL;
 	
 }
 char* insertGap(char* sentence,int position, int n){
+	printf("T  : %d\n", strlen(sentence));
 	char* newStr = malloc(strlen(sentence)+n),*gapString = malloc(n), *gap = "-";
+	printf("A\n");
+
 	int count = 0;
+	printf("G\n");
+
 	while(count<n){
 		count++;
+	printf("E\n");
+
 		strcat(gapString,gap);
 	}
+	printf("O\n");
+
 	strncpy(newStr,sentence,position);
 	strcat(newStr,gapString);
 	strncpy(newStr+position+n, sentence+position,strlen(sentence)-position+1);
+	printf("i\n");
+
 	return newStr;
 }
