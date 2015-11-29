@@ -115,7 +115,6 @@ void grasp(char **MSA, float gap, float match, float mismatch, int k, int maiorS
 		ferr->size = k;
 		ferr->score = 0;
 		computeAll(ferr);
-		printf("Score : %f\n",ferr->score);
 		score = ferr->score;
 		if (score >= melhorPontuacao) {
 			melhorPontuacao = score;
@@ -160,27 +159,24 @@ void computeSequence(PontuacaoFerramentas* ferr){
 		moveBlock(ferr,temp);
 		temp = temp->prox;
 	}
-	printf("(On sort?)\n");
 }
 void moveBlock(PontuacaoFerramentas* ferr, GapBlock* block){
 	int i;
 	float score;
 	char* shortStr = removePart(ferr->MSA[ferr->index],block->beginning, block->end+1), *tempStr, *buff ;
-	buff = malloc(ferr->maiorSeq);
+	buff = malloc((ferr->maiorSeq+1)*sizeof(char)*5);
 	GapBlock* blockShort = findGapBlocks(shortStr);
 	for(i=0;i<=strlen(shortStr);i++){
 		if(isInBlock(blockShort,i) == 0){
-			printf("toto : %s\n",shortStr);
 			tempStr = insertGap(shortStr,i,block->end-block->beginning+1);
 			if(tempStr != NULL){
 				strcpy(buff, ferr->MSA[ferr->index]);
 				strcpy(ferr->MSA[ferr->index], tempStr);
-				printf("TEST: %s\n",tempStr);
 				//free(tempStr);
 				score = pontuacao(ferr->MSA,ferr->gap, ferr->match,ferr->mismatch,ferr->size);
 				if(ferr->score <score){
 					ferr->score = score;
-					printf("new Score : %f\n", score);
+					//printf("new Score : %f\n", score);
 				}else{
 					strcpy(ferr->MSA[ferr->index], buff);
 				}
@@ -207,7 +203,7 @@ int isInBlock(GapBlock* block, int i){
 }
 GapBlock* findGapBlocks(char* seq){
  	int i, size = strlen(seq);
- 	char* str = malloc(size*sizeof(char));
+ 	char* str = malloc((size+1)*sizeof(char));
  	strcpy(str, seq);
  	GapBlock *current, *gapArray, *before;
 	gapArray = malloc(sizeof(GapBlock));
@@ -232,7 +228,7 @@ char* removePart(char* sentence, int beginning, int end){
 	int strSize = strlen(sentence);
 	if(beginning<=end && strSize>=end){
 		int size = end-beginning;
-		char *newStr = malloc((strlen(sentence)-size+1)*sizeof(char));
+		char *newStr = malloc((strlen(sentence)-size+2)*sizeof(char));
 		strncpy(newStr,sentence,beginning);
 		strncpy(newStr+beginning, sentence+end,strlen(sentence)-end+1);
 		return newStr;
@@ -241,15 +237,15 @@ char* removePart(char* sentence, int beginning, int end){
 	
 }
 char* insertGap(char* sentence,int position, int n){
-	char* newStr = malloc((strlen(sentence)+n)*sizeof(char)),*gapString = malloc(n*sizeof(char)), *gap = "-";
+	char* newStr = malloc((strlen(sentence)+n+1)*sizeof(char)),*gapString = malloc((n+1)*sizeof(char));
 	int count = 0;
 	while(count<n){
+		gapString[count] = '-';
 		count++;
-		strcat(gapString,gap);
-		printf("gapString : %s\n", gapString);
+		gapString[count] = '\0';
 	}
 	strncpy(newStr,sentence,position);
-	strcat(newStr,gapString);
+	strncpy(newStr+position,gapString,n);
 	strncpy(newStr+position+n, sentence+position,strlen(sentence)-position+1);
 	return newStr;
 }
