@@ -10,6 +10,7 @@
 typedef struct sequencia {
   char *nome;
   char *valor;
+  struct sequencia* prox;
 } Sequencia;
 
 void leNomesSequencias (FILE *f, Sequencia *seq, int k, int *max);
