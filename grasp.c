@@ -3,7 +3,15 @@
 void geraSolucaoInicialAleatoria(char **MSA, float gap, float match, float mismatch, int k, 
 																 int maiorSeq, Sequencia *seq) {
 
-	int i, j, ni, nBuracos, pos, nMax = 0;
+	int  i, j, l, n, q, r, ni, *nBuracos, novosBuracos, *qtdeBuracos;
+	char *aux;
+
+	qtdeBuracos = (int *)  malloc(sizeof(int)  * 3*maiorSeq);
+	aux 				= (char *) malloc(sizeof(char) * 3*maiorSeq);
+	nBuracos		= (int *)  malloc(sizeof(int)  * k);
+
+	memset(qtdeBuracos, 0, sizeof(int)  * 3*maiorSeq);
+	memset(aux,				  0, sizeof(char) * 3*maiorSeq);
 
 	srand(time(NULL));
 
@@ -13,46 +21,48 @@ void geraSolucaoInicialAleatoria(char **MSA, float gap, float match, float misma
 	}
 
 	/* Passo 1: Seja ai a sequencia mais longa do MSA, de tamanho ni. Para cada outra sequencia aj, de tamanho nj,
-		 inclui ni-nj buracos no fim de aj. */
+		 nBuracos = ni-nj equivale ao numero de buracos necessarios para deixar a sequencia aj do tamanho de ai. Alem
+		 disso, inclui um numero aleatorio de buracos, limitado pelo dobro do tamanho da maior sequencia */
+	novosBuracos = rand() % (int)(2*maiorSeq);
 	for (i = 0; i < k; i++) {
-		ni = strlen(seq[i].valor);
-		nBuracos = maiorSeq - ni;
-
-		if (nBuracos > nMax) {
-			nMax = nBuracos;
-		}
-
-		for (j = ni; j < ni + nBuracos; j++) {
-			MSA[i][j] = '-';
-		}
+		ni 			 		= strlen(seq[i].valor);
+		nBuracos[i] = maiorSeq - ni + novosBuracos;
 	}
 
-	/* Passo 2: Inclui mais um numero aleatorio de buracos nas sequencias, limitado pelo maior numero de buracos */
-	nBuracos = rand() % (int)(2*(nMax+1));
+	n = maiorSeq + novosBuracos; // Tamanho de cada sequencia no MSA final
 
+	/* Passo 2: Distribui os buracos em posicoes aleatorias do MSA */
 	for (i = 0; i < k; i++) {
-		for (j = maiorSeq; j < maiorSeq + nBuracos; j++) {
-			MSA[i][j] = '-';
+		while (nBuracos[i] > 0) {
+			qtdeBuracos[rand()%(n-nBuracos[i]--)]++;
 		}
-	}
 
-	/* Passo 3: Move um buraco do fim para uma posicao aleatoria do MSA */
-	for (i = 0; i < k; i++) {
-		nBuracos = strlen(MSA[i]) - strlen(seq[i].valor);
-
-		while (nBuracos > 0) {
-			pos = rand()%(strlen(MSA[i])-nBuracos);
-
-			j = strlen(MSA[i]) - nBuracos;
-			for (; j >= pos + 1; j--) {
-				MSA[i][j] = MSA[i][j-1];
+		for (r = 0, j = 0, q = 0; r < n; j++) {
+			if (qtdeBuracos[j] > 0) {
+				for (l = 0; l < qtdeBuracos[j]; l++) {
+					aux[r++] = '-';
+				}
+				qtdeBuracos[j] = 0;
 			}
-
-			MSA[i][pos] = '-';
-			nBuracos--;
+			else {
+				if (MSA[i][q] != 0) {
+					aux[r++] = MSA[i][q];
+				}
+				else {
+					aux[r++] = '-';
+				}
+				q++;
+			}
 		}
+		aux[r] = 0;
+		strcpy(MSA[i], aux);
 	}
+
+	free(nBuracos);
+	free(aux);
+	free(qtdeBuracos);
 }
+
 
 void grasp(char **MSA, float gap, float match, float mismatch, int k, int maiorSeq, Sequencia *seq) {
 	float melhorPontuacao = LONG_MIN, score;
@@ -159,14 +169,14 @@ void moveBlock(PontuacaoFerramentas* ferr, GapBlock* block){
 	buff = malloc(ferr->maiorSeq);
 	GapBlock* blockShort = findGapBlocks(shortStr);
 	for(i=0;i<=strlen(shortStr);i++){
-
 		if(isInBlock(blockShort,i) == 0){
+			printf("toto : %s\n",shortStr);
 			tempStr = insertGap(shortStr,i,block->end-block->beginning+1);
 			if(tempStr != NULL){
 				strcpy(buff, ferr->MSA[ferr->index]);
 				strcpy(ferr->MSA[ferr->index], tempStr);
 				printf("TEST: %s\n",tempStr);
-				free(tempStr);
+				//free(tempStr);
 				score = pontuacao(ferr->MSA,ferr->gap, ferr->match,ferr->mismatch,ferr->size);
 				if(ferr->score <score){
 					ferr->score = score;
@@ -183,33 +193,32 @@ void moveBlock(PontuacaoFerramentas* ferr, GapBlock* block){
 int isInBlock(GapBlock* block, int i){
 	GapBlock* temp = block;
 	int ret = 0;
-	do{
-		printf("deb\n");
-		if(i>temp->beginning && i<= temp->end){
-			//printf("I : %d, beg %d end %d\n",i,temp->beginning,temp->end);
-			ret = 1;
-			break;
-		}
-		temp = temp->prox;
-		printf("fin\n");
-	}while(temp->prox != NULL);
+	if(temp->prox != NULL){
+		do{
+			if(i>temp->beginning && i<= temp->end){
+				//printf("I : %d, beg %d end %d\n",i,temp->beginning,temp->end);
+				ret = 1;
+				break;
+			}
+			temp = temp->prox;
+		}while(temp->prox != NULL);
+	}
 	return ret;
 }
 GapBlock* findGapBlocks(char* seq){
- int i, size = strlen(seq);
- char* str = malloc(size);
- strcpy(str, seq);
- GapBlock *current, *gapArray, *before;
- gapArray = malloc(sizeof(GapBlock));
-  gapArray->prox = NULL;
-  current = gapArray;
+ 	int i, size = strlen(seq);
+ 	char* str = malloc(size*sizeof(char));
+ 	strcpy(str, seq);
+ 	GapBlock *current, *gapArray, *before;
+	gapArray = malloc(sizeof(GapBlock));
+  	gapArray->prox = NULL;
+	current = gapArray;
  for(i = 0;i<size;i++){
  	if(str[i]=='-'){
  		current->beginning = i;
  		do{
  			i++;
  		}while(str[i] =='-');
- 		
  		current->end = i-1;
  		current->prox = malloc(sizeof(GapBlock));
  		before = current;
@@ -232,25 +241,15 @@ char* removePart(char* sentence, int beginning, int end){
 	
 }
 char* insertGap(char* sentence,int position, int n){
-	printf("T  : %d\n", strlen(sentence));
-	char* newStr = malloc(strlen(sentence)+n),*gapString = malloc(n), *gap = "-";
-	printf("A\n");
-
+	char* newStr = malloc((strlen(sentence)+n)*sizeof(char)),*gapString = malloc(n*sizeof(char)), *gap = "-";
 	int count = 0;
-	printf("G\n");
-
 	while(count<n){
 		count++;
-	printf("E\n");
-
 		strcat(gapString,gap);
+		printf("gapString : %s\n", gapString);
 	}
-	printf("O\n");
-
 	strncpy(newStr,sentence,position);
 	strcat(newStr,gapString);
 	strncpy(newStr+position+n, sentence+position,strlen(sentence)-position+1);
-	printf("i\n");
-
 	return newStr;
 }
