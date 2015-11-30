@@ -10,11 +10,8 @@ void computeAll2(PontuacaoFerramentas* ferr){
 	 	// printf("MSA %d FERR MSA : %d\n",size+1, strlen(ferr->MSA[i]));
 
    		memset(MSA[i], -1, sizeof(char)* ((ferr->size)+1));
-   		printf("MSA %d pointeur : %p\n",i,MSA[i]);
-		printf("ferr MSA %d pointeur : %p\n",i,ferr->MSA[i]);
-   		printf("MSA : %s SIZE : %d\n",ferr->MSA[i],strlen(ferr->MSA[i]));
-		printf("tem que ir  in %d \n",ferr->size+1);
-   		strncpy(MSA[i],ferr->MSA[i],ferr->size);
+   		printf("SIZE FERR %d : %d -> SIZE MSA %d : %d \n",i,strlen(ferr->MSA[i]),i,ferr->size+1);
+   		strncpy(MSA[i],ferr->MSA[i],ferr->size+1);
   }
 	
 	for(i = 0; i < ferr->size; i++){
@@ -38,19 +35,17 @@ void computeRow(PontuacaoFerramentas* ferr){
 	save = (char **) malloc(sizeof(char *) * ferr->numeroBuracos);
 	saveShorts = (char **) malloc(sizeof(char *) * ferr->numeroBuracos);
 	for(i=0;i<ferr->numeroBuracos;i++){
-		save[i] = malloc(sizeof(char)*(ferr->size+1));
+		save[i] = malloc(sizeof(char)*(ferr->size)+2);
 		saveShorts[i] = malloc(sizeof(char)*((ferr->size)+2));
 		memset(saveShorts[i], 0, sizeof(char)* ((ferr->size)+2));
 		temp = removePart(ferr->MSA[buracos[i]], ferr->index, ferr->index);
-		printf("TEMP : %s SIZE : %d\n",temp,strlen(temp));
-		printf("tem que ir  in %d \n",ferr->size+2);
-		for(i = 0; i < ferr->numeroSequencia; i++){
-		 strcpy(saveShorts[i],temp);
+		printf("SIZE TEMP : %d -> SIZE SaveShorts : %d\n", strlen(temp),ferr->size+2);
+		strncpy(saveShorts[i],temp, strlen(temp)+1);
 		//free(temp); 
 	}
 		
 		//temp = removePart(MSA[buracos[i]],ferr->index,ferr->index);
-	}
+
 
 	bestScore = ferr->score;
 	for (i = 0; i < ferr->size-1; ++i)
