@@ -11,96 +11,94 @@ Autor: Guilherme Colucci Pereira
 #include "utils.h"
 
 /**
-void buildDistanceMatrix(float **dist, float gap, float match, float mismatch, int k, int max, Sequencia *sequences)
+void buildDistanceMatrix(float **dist, float a, float b, int k, int max, Sequencia *seq)
 
 Calcula a matriz de distancias entre k sequencias, utilizando a pontuacao de alinhamento fornecida.
 
-dist:      matriz de floats kxk ja inicializada, onde serao armazenadas as distancias entre cada par de sequencias
-gap:       pontuacao utilizada para gaps
-match:     pontuacao utilizada para matches
-mismatch:  pontuacao utilizada para mismatches
-max:       tamanho da maior sequencia fornecida
-sequences: vetor de elementos do tipo Sequencia, contendo as sequencias a serem alinhadas
+dist: matriz de floats kxk ja inicializada, onde serao armazenadas as distancias entre cada par de sequencias
+a: 		penalidade para abrir um bloco de buracos
+b: 		penalidade para extender um bloco de buracos
+max:  tamanho da maior sequencia fornecida
+seq:  vetor de elementos do tipo Sequencia, contendo as sequencias a serem alinhadas
 
 A matriz preenchida sera armazenada na variavel dist.
 */
-void buildDistanceMatrix(float **dist, float gap, float match, float mismatch, int k, int max, Sequencia *sequences) {
+void buildDistanceMatrix(float **dist, float a, float b, int k, int max, Sequencia *seq) {
   int   i,j,l,m,n;
-  float **M = NULL;
+  float **M1 = NULL, **M2 = NULL, **M3 = NULL;
 
   /* Constroi matriz de pontuacao */
   for (i = 0; i < k-1; i++) {
     for (j = i+1; j < k; j++) {
-      n = strlen(sequences[i].valor);
-      m = strlen(sequences[j].valor);
+      n = strlen(seq[i].valor);
+      m = strlen(seq[j].valor);
 
-      M = (float **) realloc(M, sizeof(float *) * (n+1));
+      M1 = (float **) realloc(M1, sizeof(float *) * (n+1));
+      M2 = (float **) realloc(M2, sizeof(float *) * (n+1));
+      M3 = (float **) realloc(M3, sizeof(float *) * (n+1));
+
       for (l = 0; l <= n; l++) {
-        M[l] = NULL;
+        M1[l] = NULL;
+        M2[l] = NULL;
+        M3[l] = NULL;
+
+        M1[l] = (float *) realloc(M1[l], sizeof(float) * (m+1));
+        M2[l] = (float *) realloc(M2[l], sizeof(float) * (m+1));
+        M3[l] = (float *) realloc(M3[l], sizeof(float) * (m+1));
       }
 
-      for (l = 0; l <= n; l++) {
-        M[l] = (float *) realloc(M[l], sizeof(float) * (m+1));
-      }
-
-      dist[i][j] = dist[j][i] = align(M, sequences[i].valor, n, sequences[j].valor, m, gap, match, mismatch)*-1;
+      dist[i][j] = dist[j][i] = align(M1, M2, M3, seq[i].valor, n, seq[j].valor, m, a, b)*-1;
     }
   }
 
   /* Libera espaço alocado */
   for (i = 0; i <= n; i++) {
-    free(M[i]);
+    free(M1[i]);
+    free(M2[i]);
+    free(M3[i]);
   }
-  free(M);
+  free(M1);
+  free(M2);
+  free(M3);
 }
 
 /**
-int calculaPontuacao(char **MSA, int k, int n) 
-
-Calcula a pontuacao do alinhamento multiplo, a partir do criterio usado pelo BAliBase: matches tem pontuacao 1 e 
-nao sao realizados descontos de pontuacao
-
-MSA: matriz que contem o alinhamento multiplo
-k:	 numero de sequencias
-n:   comprimento das sequencias
-
-Retorna a pontuacao
-*/
-
-/**
-void starAlign(char **MSA, float gap, float match, float mismatch, int k, int maiorSeq, Sequencia *sequences)
+void starAlign(char **MSA, float cr, float ex, float match, float mismatch, int k, int maiorSeq, Sequencia *seq)
 
 Realiza o alinhamento multiplo de k sequencias utilizando o algoritmo estrela.
 
-MSA:       matriz ja inicializada, onde sera armazenado o alinhamento multiplo final
-gap:       pontuacao utilizada para gaps
-match:     pontuacao utilizada para matches
-mismatch:  pontuacao utilizada para mismatches
-maiorSeq:  tamanho da maior sequencia fornecida
-sequences: vetor de elementos do tipo Sequencia, contendo as sequencias a serem alinhadas
+MSA:      matriz ja inicializada, onde sera armazenado o alinhamento multiplo final
+cr:			  penalidade para abrir um bloco de buracos
+ex:				penalidade para extender um bloco de buracos
+maiorSeq: tamanho da maior sequencia fornecida
+seq: 		  vetor de elementos do tipo Sequencia, contendo as sequencias a serem alinhadas
 
 O alinhamento preenchido sera armazenado na variavel MSA.
 */
-void starAlign(char **MSA, float gap, float match, float mismatch, int k, int maiorSeq, Sequencia *sequences) {
+void starAlign(char **MSA, float cr, float ex, int k, int maiorSeq, Sequencia *seq) {
   int   f, g, h, i, j, l, m, n, nextRow, larguraMSA, larguraSA, ancora, max;
-  float menorSoma, soma, **M, **dist;
+  float menorSoma, soma, **M1, **M2, **M3, **dist;
   char  *a, *b, *aux, *ancoraOriginal;
 
   /* Inicializacao e alocacao */
-  M = NULL;
-  a = NULL;
-  b = NULL;
-  aux = (char *) malloc(sizeof(char) * 3*maiorSeq);
+  M1 = NULL;
+  M2 = NULL;
+  M3 = NULL;
+  a  = NULL;
+  b  = NULL;
+ 
+	larguraMSA = 0;
+  nextRow 	 = 1;
+
+  aux 					 = (char *) malloc(sizeof(char) * 3*maiorSeq);
   ancoraOriginal = (char *) malloc(sizeof(char) * 3*maiorSeq);
-  larguraMSA = 0;
-  nextRow = 1;
 
   /* Constroi matriz de distancias */
   dist = (float **) malloc(sizeof(float *) * k);
   for (i = 0; i < k; i++) {
     dist[i] = (float *) malloc(sizeof(float) * k);
   }
-  buildDistanceMatrix(dist, gap, match, mismatch, k, maiorSeq, sequences);
+  buildDistanceMatrix(dist, cr, ex, k, maiorSeq, seq);
 
   /* Escolhe sequencia ancora */;
   for (i = 0; i < k; i++) {
@@ -128,18 +126,22 @@ void starAlign(char **MSA, float gap, float match, float mismatch, int k, int ma
   }
   free(dist);
 
-  n = strlen(sequences[ancora].valor);
+  n = strlen(seq[ancora].valor);
 
   /* Constroi alinhamento */
-  for (i = 0; i < k; i++) { // Em cada etapa, incluímos a sequencia i no alinhamento multiplo
+  for (i = 0; i < k; i++) { // Em cada etapa, inclui a sequencia i no alinhamento multiplo
     if (i != ancora) {
-      m = strlen(sequences[i].valor);
+      m 	= strlen(seq[i].valor);
       max = n > m? n: m;
 
       /* Alocacoes */
-      M = (float **) malloc(sizeof(float *) * (n+1));
+      M1 = (float **) malloc(sizeof(float *) * (n+1));
+      M2 = (float **) malloc(sizeof(float *) * (n+1));
+      M3 = (float **) malloc(sizeof(float *) * (n+1));
       for (l = 0; l <= n; l++) {
-        M[l] = (float *) malloc(sizeof(float) * (m+1));
+        M1[l] = (float *) malloc(sizeof(float) * (m+1));
+        M2[l] = (float *) malloc(sizeof(float) * (m+1));
+        M3[l] = (float *) malloc(sizeof(float) * (m+1));
       }
 
       a = (char *) realloc(a, sizeof(char)*2*max);
@@ -148,13 +150,17 @@ void starAlign(char **MSA, float gap, float match, float mismatch, int k, int ma
       memset(b, 0, sizeof(char)*2*max); // Alocacao maior que o necessario
 
       /* Computa o alinhamento da sequencia ancora com a sequencia i */
-      align(M, sequences[ancora].valor,n,sequences[i].valor,m,gap,match,mismatch);
-      larguraSA = getUpmostAlignment(M,a,b,sequences[ancora].valor,n,sequences[i].valor,m,gap,match,mismatch);
+      align(M1, M2, M3, seq[ancora].valor, n, seq[i].valor, m, cr, ex);
+      larguraSA = getUpmostAlignment(M1, M2, M3, a, b, seq[ancora].valor, n, seq[i].valor, m, cr, ex);
 
       for (l = 0; l <= n; l++) {
-        free(M[l]);
+        free(M1[l]);
+        free(M2[l]);
+        free(M3[l]);
       }
-      free(M);
+      free(M1);
+      free(M2);
+      free(M3);
 
       reverteString(a);
       reverteString(b);
@@ -178,7 +184,7 @@ void starAlign(char **MSA, float gap, float match, float mismatch, int k, int ma
         j = 0; // Indice j aponta a j-esima sequencia do MSA
 
         memset(ancoraOriginal, 0, sizeof(char)*2*maiorSeq);
-        strcpy(ancoraOriginal,MSA[ancora]); // Salva configuracao atual da ancora no MSA para uso futuro
+        strcpy(ancoraOriginal, MSA[ancora]); // Salva configuracao atual da ancora no MSA para uso futuro
 
         /* Atualizacao do MSA */
         for (j = 0; j < k; j++) {
@@ -231,15 +237,15 @@ void starAlign(char **MSA, float gap, float match, float mismatch, int k, int ma
                 l++;
               }
             }
-
             g++;
           }
+					aux[g] = 0;
 
           if (strlen(aux) > larguraMSA) {
             larguraMSA = strlen(aux);
           }
 
-          strcpy(MSA[j],aux);
+          strcpy(MSA[j], aux);
         }
 
         if (i < ancora && i+1 == ancora) {

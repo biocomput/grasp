@@ -3,8 +3,7 @@
 
 #include "utils.h"
 
-float getUpmostAlignment(float **M, char *aa1, char *aa2, char* a1, int n1, char *a2, int n2,
-                        float gap, float match, float mismatch);
-float align(float **M, char* a1, int n1, char *a2, int n2, float gap, float match, float mismatch);
+float getUpmostAlignment(float **M, char *aa1, char *aa2, char* a1, int n1, char *a2, int n2, float gap);
+float align						  (float **M, char* a1, int n1, char *a2, int n2, float gap);
 
 #endif

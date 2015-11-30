@@ -9,8 +9,7 @@ Autor: Guilherme Colucci Pereira
 #include "needleman-wunsch.h"
 
 /**
-int getUpmostAlignment(float **M, char *aa1, char *aa2, char* a1, int n1, char *a2, int n2, int max,
-                        float gap, float match, float mismatch)
+int getUpmostAlignment(float **M, char *aa1, char *aa2, char* a1, int n1, char *a2, int n2, int max, float gap)
 
 Dada uma matriz de alinhamento, calcula o alinhamento correspondente atraves do criterio upmost.
 
@@ -22,13 +21,10 @@ n1:       tamanho de a1
 a2:       sequencia alinhada
 n2:       tamanho de a2
 gap:      pontuacao utilizada para gaps
-match:    pontuacao utilizada para matches
-mismatch: pontuacao utilizada para mismatches
 
 Valores de a1 e a2 no alinhamento sao guardados nas variaveis aa1 e aa2, respectivamente.
 */
-float getUpmostAlignment(float **M, char *aa1, char *aa2, char* a1, int n1, char *a2, int n2,
-                        float gap, float match, float mismatch) {
+float getUpmostAlignment(float **M, char *aa1, char *aa2, char* a1, int n1, char *a2, int n2, float gap) {
   int i, j, k;
 
   i = n1;
@@ -41,7 +37,7 @@ float getUpmostAlignment(float **M, char *aa1, char *aa2, char* a1, int n1, char
       aa2[k] = '-';
       i--;
     }
-    else if (i > 0 && j > 0 && M[i][j] == M[i-1][j-1] + (a1[i-1] == a2[j-1]? match: mismatch)) {
+    else if (i > 0 && j > 0 && M[i][j] == M[i-1][j-1] + pontuacaoCaracteres(a1[i-1], a2[j-1])) {
       aa1[k] = a1[i-1];
       aa2[k] = a2[j-1];
       i--;
@@ -52,7 +48,6 @@ float getUpmostAlignment(float **M, char *aa1, char *aa2, char* a1, int n1, char
       aa2[k] = a2[j-1];
       j--;
     }
-
     k++;
   }
 
@@ -66,18 +61,16 @@ float align(float **M, char* a1, int n1, char *a2, int n2, float gap, float matc
 Dadas duas sequencias de caracteres, calcula a matriz de alinhamento global correspondente usando o algoritmo
 de Needleman-Wunsch.
 
-M:        matriz de alinhamento ja inicializada
-a1:       sequencia alinhada
-n1:       tamanho de a1
-a2:       sequencia alinhada
-n2:       tamanho de a2
-gap:      pontuacao utilizada para gaps
-match:    pontuacao utilizada para matches
-mismatch: pontuacao utilizada para mismatches
+M:   matriz de alinhamento ja inicializada
+a1:  sequencia alinhada
+n1:  tamanho de a1
+a2:  sequencia alinhada
+n2:  tamanho de a2
+gap: pontuacao utilizada para gaps
 
 Retorna o valor do alinhamento com a pontuacao fornecida.
 */
-float align(float **M, char* a1, int n1, char *a2, int n2, float gap, float match, float mismatch) {
+float align(float **M, char* a1, int n1, char *a2, int n2, float gap) {
   float max, aux;
   int   i, j;
 
@@ -93,13 +86,13 @@ float align(float **M, char* a1, int n1, char *a2, int n2, float gap, float matc
     for (j = 1; j <= n2; j++) {
       max = M[i][j-1] + gap;
 
-      aux = a1[i-1] == a2[j-1]? match: mismatch;
+      aux = pontuacaoCaracteres(a1[i-1], a2[j-1]);
       if (max < M[i-1][j-1] + aux) {
-        max = M[i-1][j-1] + aux;
+        max 	= M[i-1][j-1] + aux;
       }
 
       if (max < M[i-1][j] + gap) {
-        max = M[i-1][j] + gap;
+        max 	= M[i-1][j] + gap;
       }
 
       M[i][j] = max;
